@@ -1,17 +1,25 @@
 const User = require('../models/user.model')
 const { generateOtp } = require('../utils/helper.functions')
+const { hashPassword, comparePassword } = require('../utils/passwordHash.functions')
+const jwt = require('jsonwebtoken')
 
 const userController = {
     registerUser: async (req, res) => {
         try {
             const { name, email, password, phoneNo } = req.body
+            console.log(req.body)
             if (!name || !email || !password) {
                 return res.status(400).json({ message: "All fields are required" })
             }
+            const emailExist = await User.findOne({ email })
+            if (emailExist) {
+                return res.status(400).json({ message: "Email already exists" })
+            }
+            const hashedPassword = await hashPassword(password)
             const newUser = {
                 userName: name,
                 email,
-                password,
+                password: hashedPassword,
                 phoneNo
             }
             const addedData = await User.create(newUser)
@@ -22,12 +30,41 @@ const userController = {
             return res.status(500).json({ message: "Internal server error" })
         }
     },
+    loginUser: async (req, res) => {
+        try {
+            const { email, password } = req.body
+            if (!email || !password) {
+                return res.status(400).json({ message: "Missing email or password" })
+            }
+            const user = await User.findOne({ email })
+
+            if (!user) {
+                return res.status(404).json({ message: "User not found" })
+            }
+            const isPasswordMatched = await comparePassword(password, user.password)
+            if (!isPasswordMatched) {
+                return res.status(401).json({ message: "Invalid credentials" })
+            }
+            const userData = {
+                id: user._id,
+                name: user.userName,
+                email: user.email
+            }
+            const token = await jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
+
+            return res.status(200).json({ message: "Login Successful", data: userData, accessToken: token })
+        } catch (error) {
+            console.error("Error while logging in:", error)
+            return res.status(500).json({ message: "Internal server error" })
+        }
+    },
     getUser: async (req, res) => {
         try {
             const users = await User.find()
             return res.status(200).json({ message: "User Fetched Successfully", data: users })
         } catch (error) {
             console.error("Error while fetching users:", error)
+            return res.status(500).json({ message: "Internal server error" })
         }
     },
     getUserById: async (req, res) => {
