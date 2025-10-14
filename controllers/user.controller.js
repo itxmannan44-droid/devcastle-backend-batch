@@ -2,14 +2,18 @@ const User = require('../models/user.model')
 const { generateOtp } = require('../utils/helper.functions')
 const { hashPassword, comparePassword } = require('../utils/passwordHash.functions')
 const jwt = require('jsonwebtoken')
+const { userEnum } = require('../utils/types/enums.types')
 
 const userController = {
     registerUser: async (req, res) => {
         try {
-            const { name, email, password, phoneNo } = req.body
-            console.log(req.body)
+            const { name, email, password, phoneNo, role } = req.body
             if (!name || !email || !password) {
                 return res.status(400).json({ message: "All fields are required" })
+            }
+            if (role === userEnum.admin || role === userEnum.user) true
+            else {
+                return res.status(400).json({ message: "Invalid role" })
             }
             const emailExist = await User.findOne({ email })
             if (emailExist) {
@@ -20,7 +24,8 @@ const userController = {
                 userName: name,
                 email,
                 password: hashedPassword,
-                phoneNo
+                phoneNo,
+                role
             }
             const addedData = await User.create(newUser)
             const otp = generateOtp()
@@ -60,7 +65,9 @@ const userController = {
     },
     getUser: async (req, res) => {
         try {
-            const users = await User.find()
+            const id = req.user.id
+            const parsedId = id.toString()
+            const users = await User.findOne({ _id: parsedId })
             return res.status(200).json({ message: "User Fetched Successfully", data: users })
         } catch (error) {
             console.error("Error while fetching users:", error)

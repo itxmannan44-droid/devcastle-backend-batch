@@ -4,7 +4,6 @@ const types = mongoose.Schema.Types
 const userSchema = new mongoose.Schema({
     id: {
         type: types.ObjectId,
-        unique: true,
         autoIncrement: true
     },
     userName: {
@@ -22,7 +21,12 @@ const userSchema = new mongoose.Schema({
         required: true
     },
     phoneNo: {
-        types: types.String
+        type: types.String
+    },
+    role: {
+        type: types.String,
+        enum: ['user', 'admin'],
+        default: 'user'
     }
 })
 
