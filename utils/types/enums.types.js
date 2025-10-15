@@ -1,6 +1,7 @@
 const userEnum = {
     user: 'user',
-    admin: 'admin'
+    admin: 'admin',
+    vendor: 'vendor'
 }
 module.exports = {
     userEnum

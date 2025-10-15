@@ -11,11 +11,15 @@ const userController = {
             if (!name || !email || !password) {
                 return res.status(400).json({ message: "All fields are required" })
             }
-            if (role === userEnum.admin || role === userEnum.user) true
+            if (role === userEnum.admin || role === userEnum.user || role === userEnum.vendor) true
             else {
                 return res.status(400).json({ message: "Invalid role" })
             }
             const emailExist = await User.findOne({ email })
+            const adminExist = await User.findOne({ role: userEnum.admin })
+            if (role === userEnum.admin && adminExist) {
+                return res.status(400).json({ message: "Admin already exists" })
+            }
             if (emailExist) {
                 return res.status(400).json({ message: "Email already exists" })
             }
@@ -53,7 +57,8 @@ const userController = {
             const userData = {
                 id: user._id,
                 name: user.userName,
-                email: user.email
+                email: user.email,
+                role: user.role
             }
             const token = await jwt.sign(userData, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 
@@ -68,6 +73,15 @@ const userController = {
             const id = req.user.id
             const parsedId = id.toString()
             const users = await User.findOne({ _id: parsedId })
+            return res.status(200).json({ message: "User Fetched Successfully", data: users })
+        } catch (error) {
+            console.error("Error while fetching users:", error)
+            return res.status(500).json({ message: "Internal server error" })
+        }
+    },
+    getAllUser: async (req, res) => {
+        try {
+            const users = await User.find()
             return res.status(200).json({ message: "User Fetched Successfully", data: users })
         } catch (error) {
             console.error("Error while fetching users:", error)

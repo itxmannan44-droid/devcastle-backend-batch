@@ -1,4 +1,3 @@
-const user = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 
 const authenticate = async (req, res, next) => {
@@ -16,4 +15,18 @@ const authenticate = async (req, res, next) => {
     }
 }
 
-module.exports = { authenticate }
+const authorization = (roles) => {
+    return (req, res, next) => {
+        try {
+            if (!roles.includes(req.user.role)) {
+                return res.status(403).json({ message: "Forbidden Access" })
+            }
+            next()
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: "Interval Server Error", error: error.message })
+        }
+    }
+}
+
+module.exports = { authenticate, authorization }
