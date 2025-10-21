@@ -3,7 +3,6 @@ const hashPassword = async (password) => {
     try {
         const saltRounds = process.env.SALT_ROUNDS || 10
         const salt = await bcrypt.genSalt(parseInt(saltRounds))
-        console.log("Salt:", salt)
         const hashPassword = await bcrypt.hash(password, salt)
         return hashPassword
     } catch (error) {

@@ -37,6 +37,9 @@ const userSchema = new mongoose.Schema({
         type: types.String,
         enum: ['user', 'admin', 'vendor'],
         default: 'user'
+    },
+    tempToken: {
+        type: types.String
     }
 })
 

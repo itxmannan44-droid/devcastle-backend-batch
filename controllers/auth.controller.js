@@ -4,6 +4,7 @@ const { hashPassword, comparePassword } = require('../utils/passwordHash.functio
 const jwt = require('jsonwebtoken')
 const { userEnum } = require('../utils/types/enums.types')
 const sendMail = require('../config/mailer.config')
+const { status } = require('express/lib/response')
 
 const authController = {
     registerUser: async (req, res) => {
@@ -104,6 +105,99 @@ const authController = {
         } catch (error) {
             console.error("Error while verifying email:", error)
             return res.status(500).json({ message: "Internal Server error", error: error.message })
+        }
+    },
+    updatePassword: async (req, res) => {
+        try {
+            const id = req.user.id
+            const { oldPassword, newPassword } = req.body
+            const user = await User.findById(id)
+            if (!user) {
+                return res.status(404).json({ message: "User not found" })
+            }
+
+            if (oldPassword === newPassword) {
+                return res.status(400).json({ status: false, message: "New password cannot be same as old password" })
+            }
+
+            const hashedPassword = await hashPassword(newPassword)
+
+            user.password = hashedPassword
+            await user.save()
+            return res.status(200).json({ status: true, message: "Password updated successfully" })
+        } catch (error) {
+            console.error("Error while updating password")
+            return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message })
+        }
+    },
+    resendOtp: async (req, res) => {
+        try {
+            const { email } = req.body
+            const userExist = await User.findOne({ email })
+            if (!userExist) {
+                return res.status(404).json({ status: false, message: "User not found" })
+            }
+            const newOtp = await generateOtp()
+            userExist.otp = newOtp
+            userExist.otpExpiredAt = new Date(Date.now() + 10 * 60 * 1000)
+            await userExist.save()
+
+            const mailOptions = {
+                from: process.env.MAIL_USER,
+                to: email,
+                subject: "New Otp",
+                text: `Your OTP for email verification is ${newOtp}. It will expire in 10 minutes.`
+            }
+            await sendMail(mailOptions)
+            return res.status(200).json({ status: true, message: "Otp sent successfully" })
+        } catch (error) {
+            console.error("Error while resending otp")
+            return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message })
+        }
+    },
+    verifyResendOtp: async (req, res) => {
+        try {
+            const { otp, email } = req.body;
+            const userExist = await User.findOne({ email })
+            if (!userExist) {
+                return res.status(404).json({ status: false, message: "User not found" })
+            }
+            const currentDataTime = new Date(Date.now())
+            const otpValid = userExist.otp === parseInt(otp) && userExist.otpExpiredAt >= currentDataTime
+            console.log(otpValid)
+            const randomString = Math.random().toString(36).substring(2, 15);
+            const tempToken = await hashPassword(randomString)
+            if (otpValid) {
+                userExist.otp = null
+                userExist.otpExpiredAt = null
+                userExist.tempToken = tempToken
+                await userExist.save()
+            } else {
+                return res.status(400).json({ status: false, message: "Invalid or expired otp" })
+            }
+            return res.status(200).json({ status: true, message: "Email verified successfully", tempToken: tempToken })
+        } catch (error) {
+            console.log(error)
+            return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message })
+        }
+    },
+    resetPassword: async (req, res) => {
+        try {
+            const { tempToken, password } = req.body
+            const userExist = await User.findOne({ tempToken })
+
+            if (!userExist) {
+                return res.status(404).json({ status: false, message: "User not found" })
+            }
+
+            const hashedPassword = await hashPassword(password)
+            userExist.password = hashedPassword
+            userExist.tempToken = null
+            await userExist.save()
+            return res.status(200).json({ status: true, message: "Password reset successfully" })
+        } catch (error) {
+            console.error("Error while resetting password")
+            return res.status(500).json({ status: false, message: "Internal Server error", error: error.message })
         }
     }
 }
