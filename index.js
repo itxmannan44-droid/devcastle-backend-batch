@@ -12,6 +12,6 @@ app.use('/auth',require('./routes/auth.route'))
 
 connectDB().then(() => {
     app.listen(3005, () => {
-        console.log("Server is running on port 3000")
+        console.log("Server is running on port 3005")
     })
 })

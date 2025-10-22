@@ -4,7 +4,6 @@ const { hashPassword, comparePassword } = require('../utils/passwordHash.functio
 const jwt = require('jsonwebtoken')
 const { userEnum } = require('../utils/types/enums.types')
 const sendMail = require('../config/mailer.config')
-const { status } = require('express/lib/response')
 
 const authController = {
     registerUser: async (req, res) => {
@@ -27,6 +26,7 @@ const authController = {
             }
             const hashedPassword = await hashPassword(password)
             const otp = generateOtp()
+            const filePath = req.file.filename
             const newUser = {
                 userName: name,
                 email,
@@ -34,7 +34,8 @@ const authController = {
                 phoneNo,
                 role,
                 otp: otp,
-                otpExpiredAt: new Date(Date.now() + 10 * 60 * 1000)
+                otpExpiredAt: new Date(Date.now() + 10 * 60 * 1000),
+                profileImage: `/public/images/${filePath}`
             }
             const mailOptions = {
                 from: process.env.MAIL_USER,

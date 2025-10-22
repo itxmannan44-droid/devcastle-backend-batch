@@ -40,6 +40,12 @@ const userSchema = new mongoose.Schema({
     },
     tempToken: {
         type: types.String
+    },
+    profileImage: {
+        type: types.String,
+        set(value) {
+            return `${process.env.BASE_URL}${value}`
+        }
     }
 })
 
