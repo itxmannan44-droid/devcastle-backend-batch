@@ -8,6 +8,7 @@ const sendMail = require('../config/mailer.config')
 const authController = {
     registerUser: async (req, res) => {
         try {
+            console.log(req.file)
             const { name, email, password, phoneNo, role } = req.body
             if (!name || !email || !password) {
                 return res.status(400).json({ message: "All fields are required" })

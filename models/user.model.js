@@ -43,10 +43,14 @@ const userSchema = new mongoose.Schema({
     },
     profileImage: {
         type: types.String,
-        set(value) {
-            return `${process.env.BASE_URL}${value}`
+        get(value) {
+            if (!value) return value;
+            return `${process.env.BASE_URL}/public/images/${value}`;
         }
     }
+}, {
+    toJSON: { getters: true },
+    toObject: { getters: true }
 })
 
 const User = mongoose.model('user', userSchema)
