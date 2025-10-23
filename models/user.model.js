@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema({
         type: types.String,
         get(value) {
             if (!value) return value;
-            return `${process.env.BASE_URL}/public/images/${value}`;
+            return `${process.env.BASE_URL}${value}`;
         }
     }
 }, {

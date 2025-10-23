@@ -8,7 +8,6 @@ const sendMail = require('../config/mailer.config')
 const authController = {
     registerUser: async (req, res) => {
         try {
-            console.log(req.file)
             const { name, email, password, phoneNo, role } = req.body
             if (!name || !email || !password) {
                 return res.status(400).json({ message: "All fields are required" })
@@ -36,7 +35,7 @@ const authController = {
                 role,
                 otp: otp,
                 otpExpiredAt: new Date(Date.now() + 10 * 60 * 1000),
-                profileImage: `/public/images/${filePath}`
+                profileImage: `/images/${filePath}`
             }
             const mailOptions = {
                 from: process.env.MAIL_USER,
@@ -92,8 +91,6 @@ const authController = {
                 return res.status(404).json({ message: "User not found" })
             }
             const currentDataTime = new Date(Date.now())
-            console.log(user.otpExpiredAt, "User")
-            console.log(currentDataTime, "Current")
             const otpValid = user.otp === otp && user.otpExpiredAt >= currentDataTime
             if (otpValid) {
                 user.isVerified = true
@@ -166,7 +163,6 @@ const authController = {
             }
             const currentDataTime = new Date(Date.now())
             const otpValid = userExist.otp === parseInt(otp) && userExist.otpExpiredAt >= currentDataTime
-            console.log(otpValid)
             const randomString = Math.random().toString(36).substring(2, 15);
             const tempToken = await hashPassword(randomString)
             if (otpValid) {
@@ -179,7 +175,7 @@ const authController = {
             }
             return res.status(200).json({ status: true, message: "Email verified successfully", tempToken: tempToken })
         } catch (error) {
-            console.log(error)
+            console.error(error)
             return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message })
         }
     },
