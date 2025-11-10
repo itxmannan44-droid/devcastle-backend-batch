@@ -1,12 +1,20 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/user.model')
 
 const authenticate = async (req, res, next) => {
     try {
         const token = req.headers[process.env.JWT_HEADER];
-        if (!token) {
+        const tokenWithoutBearer = token?.startsWith("Bearer ") ? token.slice(7, token.length) : null;
+        if (!tokenWithoutBearer) {
             return res.status(401).json({ message: "Unauthorized User" })
         }
-        const user = await jwt.verify(token, process.env.JWT_SECRET)
+        const user = await jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET)
+
+        const userExist = await User.findById(user.id)
+        if (!userExist) {
+            return res.status(401).json({ message: "Unauthorized User" })
+        }
+
         req.user = user
         next()
     } catch (error) {

@@ -14,8 +14,29 @@ const userController = {
     },
     getAllUser: async (req, res) => {
         try {
-            const users = await User.find()
-            return res.status(200).json({ message: "User Fetched Successfully", data: users })
+            const offset = parseInt(req.query.offset) || 0
+            const limit = parseInt(req.query.limit) || 10
+            console.log("Offset:", offset, "Limit:", limit)
+            const search = req.query.search || ''
+
+            const query = {}
+
+            if (search) {
+                query.$or = [
+                    { userName: {$regex} }
+                ]
+            }
+
+            const users = await User.find().skip(offset).limit(limit).sort({ createdAt: -1 })
+            return res.status(200).json({
+                message: "User Fetched Successfully",
+                data: users,
+                pagination: {
+                    offset: offset,
+                    limit: limit,
+                    total: await User.countDocuments()
+                }
+            })
         } catch (error) {
             console.error("Error while fetching users:", error)
             return res.status(500).json({ message: "Internal server error" })
