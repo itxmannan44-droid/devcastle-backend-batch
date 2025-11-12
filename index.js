@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use('/images', express.static('public/images'))
 app.use('/user', require('./routes/user.route'))
 app.use('/auth',require('./routes/auth.route'))
-// app.use('/post', require('./routes/post.route'))
+app.use('/category', require('./routes/category.route'))
 
 connectDB().then(() => {
     app.listen(3005, () => {
