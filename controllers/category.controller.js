@@ -18,7 +18,7 @@ const categoryController = {
     },
     getAllCategories: async (req, res) => {
         try {
-            const categories = await Category.find()
+            const categories = await Category.find({ is_deleted: false });
             return res.status(200).json({ status: true, data: categories })
         } catch (error) {
             console.error(error);
@@ -28,7 +28,7 @@ const categoryController = {
     getCategoryById: async (req, res) => {
         try {
             const id = req.params.id;
-            const category = await Category.findById(id);
+            const category = await Category.findOne({ _id: id, is_deleted: false });
             if (!category) {
                 return res.status(404).json({ status: false, message: "Category not found" })
             }
@@ -64,8 +64,20 @@ const categoryController = {
     deleteCategory: async (req, res) => {
         try {
             const id = req.params.id;
-            const deletedData = await Category.findByIdAndDelete(id);
-            return res.status(200).json({ status: true, message: "Category deleted successfully", data: deletedData })
+            const category = await Category.findOne({_id: id, is_deleted: false });
+            if (!category) {
+                return res.status(404).json({ status: false, message: "Category not found" })
+            }
+            console.log(category);
+            const data = new Date().toString();
+            const update = await Category.findByIdAndUpdate(
+                { _id: id },
+                {
+                    is_deleted: true,
+                    deleted_at: data
+                }
+            );
+            return res.status(200).json({ status: true, message: "Category deleted successfully", data: update })
         } catch (error) {
             console.error(error);
             return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message });
