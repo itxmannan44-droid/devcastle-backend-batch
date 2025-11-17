@@ -52,8 +52,12 @@ const categoryController = {
             const id = req.params.id;
             const { name, parent_id } = req.body
             const currentDate = new Date();
-            const image_url = req.file ? '/images' + req.file.filename : undefined;
-            const updatedData = { name, parent_id, image: image_url, date: currentDate }
+            const updatedData = { name, parent_id, date: currentDate };
+
+            if (req.file) {
+                updatedData.image = '/images/' + req.file.filename;
+            }
+
             const updatedPost = await Category.findByIdAndUpdate(id, updatedData, { new: true })
             return res.status(200).json({ status: true, message: "Category updated successfully", data: updatedPost })
         } catch (error) {
@@ -64,7 +68,7 @@ const categoryController = {
     deleteCategory: async (req, res) => {
         try {
             const id = req.params.id;
-            const category = await Category.findOne({_id: id, is_deleted: false });
+            const category = await Category.findOne({ _id: id, is_deleted: false });
             if (!category) {
                 return res.status(404).json({ status: false, message: "Category not found" })
             }

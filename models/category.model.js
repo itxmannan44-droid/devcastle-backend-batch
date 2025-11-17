@@ -26,14 +26,17 @@ const CategorySchema = new Schema({
         type: Date,
         default: Date.now
     },
-    is_deleted:{
+    is_deleted: {
         type: Boolean,
         default: false
     },
-    deleted_at:{
+    deleted_at: {
         type: Date,
         default: null
     }
+}, {
+    toJSON: { getters: true },
+    toObject: { getters: true }
 })
 
 const Category = mongoose.model('Category', CategorySchema);
