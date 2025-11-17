@@ -18,8 +18,20 @@ const categoryController = {
     },
     getAllCategories: async (req, res) => {
         try {
-            const categories = await Category.find({ is_deleted: false });
-            return res.status(200).json({ status: true, data: categories })
+            const page = parseInt(req.query.page) || 1
+            const limit = parseInt(req.query.limit) || 10
+            const skip = (page - 1) * limit
+            const categories = await Category.find(
+                { is_deleted: false }
+            ).skip(skip).limit(limit).sort({ createdAt: 1 });
+            const pagination = {
+                currentPage: page,
+                perPage: limit,
+                currentShowing: categories.length,
+                totalItems: await Category.countDocuments({ is_deleted: false }),
+                totalPages: Math.ceil(await Category.countDocuments({ is_deleted: false }) / limit)
+            }
+            return res.status(200).json({ status: true, data: categories, pagination })
         } catch (error) {
             console.error(error);
             return res.status(500).json({ status: false, message: "Internal Server Error", error: error.message });
@@ -28,7 +40,7 @@ const categoryController = {
     getCategoryById: async (req, res) => {
         try {
             const id = req.params.id;
-            const category = await Category.findOne({ _id: id, is_deleted: false });
+            const category = await Category.findOne({ _id: id, is_deleted: false }).populate('parent_id');
             if (!category) {
                 return res.status(404).json({ status: false, message: "Category not found" })
             }
@@ -40,7 +52,7 @@ const categoryController = {
     },
     getParentChildCategories: async (req, res) => {
         try {
-            const categories = await Category.find().populate('parent_id');
+            const categories = await Category.find({ is_deleted: false }).populate('parent_id');
             return res.status(200).json({ status: true, data: categories });
         } catch (error) {
             console.error(error);
@@ -51,14 +63,12 @@ const categoryController = {
         try {
             const id = req.params.id;
             const { name, parent_id } = req.body
-            const currentDate = new Date();
-            const updatedData = { name, parent_id, date: currentDate };
 
+            let imageUrl;
             if (req.file) {
-                updatedData.image = '/images/' + req.file.filename;
+                imageUrl = '/images/' + req.file.filename;
             }
-
-            const updatedPost = await Category.findByIdAndUpdate(id, updatedData, { new: true })
+            const updatedPost = await Category.findByIdAndUpdate({ _id: id }, { name, parent_id, image: imageUrl }, { new: true })
             return res.status(200).json({ status: true, message: "Category updated successfully", data: updatedPost })
         } catch (error) {
             console.error(error);
@@ -67,20 +77,22 @@ const categoryController = {
     },
     deleteCategory: async (req, res) => {
         try {
-            const id = req.params.id;
-            const category = await Category.findOne({ _id: id, is_deleted: false });
+            const parent_id = req.params.id;
+            const category = await Category.findOne({ _id: parent_id, is_deleted: false });
             if (!category) {
                 return res.status(404).json({ status: false, message: "Category not found" })
             }
-            console.log(category);
-            const data = new Date().toString();
-            const update = await Category.findByIdAndUpdate(
-                { _id: id },
+            const currentDate = new Date().toString();
+            const update = await Category.updateMany(
                 {
-                    is_deleted: true,
-                    deleted_at: data
-                }
-            );
+                    $or: [
+                        { _id: parent_id },
+                        { parent_id: parent_id }
+                    ]
+                },
+                { is_deleted: true, date: currentDate }
+            )
+
             return res.status(200).json({ status: true, message: "Category deleted successfully", data: update })
         } catch (error) {
             console.error(error);
