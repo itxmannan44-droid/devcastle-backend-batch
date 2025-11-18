@@ -1,4 +1,5 @@
 const Category = require('../models/category.model');
+const { deleteImages } = require('../utils/helper.functions');
 
 const categoryController = {
     createCategory: async (req, res) => {
@@ -20,10 +21,18 @@ const categoryController = {
         try {
             const page = parseInt(req.query.page) || 1
             const limit = parseInt(req.query.limit) || 10
+            let search = req.query.search || ""
+
+            let filter = { is_deleted: false };
+
+            if (search) {
+                filter.name = { $regex: search, $options: 'i' }
+            }
+
             const skip = (page - 1) * limit
             const categories = await Category.find(
-                { is_deleted: false }
-            ).skip(skip).limit(limit).sort({ createdAt: 1 });
+                { is_deleted: false }, filter,
+            ).skip(skip).limit(limit).sort({ _id: -1 });
             const pagination = {
                 currentPage: page,
                 perPage: limit,
@@ -63,9 +72,16 @@ const categoryController = {
         try {
             const id = req.params.id;
             const { name, parent_id } = req.body
+            const category = await Category.findOne({ _id: id, is_deleted: false });
+
+            if (!category) {
+                return res.status(404).json({ status: false, message: "Category not found" })
+            }
 
             let imageUrl;
+
             if (req.file) {
+                deleteImages(category.image);
                 imageUrl = '/images/' + req.file.filename;
             }
             const updatedPost = await Category.findByIdAndUpdate({ _id: id }, { name, parent_id, image: imageUrl }, { new: true })
