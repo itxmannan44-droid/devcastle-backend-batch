@@ -21,18 +21,22 @@ const categoryController = {
         try {
             const page = parseInt(req.query.page) || 1
             const limit = parseInt(req.query.limit) || 10
-            let search = req.query.search || ""
+            const search = req.query.search || ""
 
             let filter = { is_deleted: false };
 
             if (search) {
-                filter.name = { $regex: search, $options: 'i' }
+                filter.$or = [
+                    { name: { $regex: search, $options: 'i' } }
+                ]
             }
 
             const skip = (page - 1) * limit
-            const categories = await Category.find(
-                { is_deleted: false }, filter,
-            ).skip(skip).limit(limit).sort({ _id: -1 });
+            const categories = await Category.find(filter)
+                .skip(skip)
+                .limit(limit)
+                .sort({ date: -1 })
+                .populate('parent_id');
             const pagination = {
                 currentPage: page,
                 perPage: limit,

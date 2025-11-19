@@ -14,20 +14,21 @@ const userController = {
     },
     getAllUser: async (req, res) => {
         try {
-            const offset = parseInt(req.query.offset) || 0
+            const page = parseInt(req.query.page) || 1
             const limit = parseInt(req.query.limit) || 10
-            console.log("Offset:", offset, "Limit:", limit)
-            const search = req.query.search || ''
+            const search = req.query.search || ""
 
-            const query = {}
+            let filter = {};
 
             if (search) {
-                query.$or = [
-                    { userName: {$regex} }
+                filter.$or = [
+                    { userName: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
                 ]
             }
 
-            const users = await User.find().skip(offset).limit(limit).sort({ createdAt: -1 })
+            const offset = (page - 1) * limit
+            const users = await User.find(filter).skip(offset).limit(limit).sort({ createdAt: -1 })
             return res.status(200).json({
                 message: "User Fetched Successfully",
                 data: users,
